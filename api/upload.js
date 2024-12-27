@@ -33,7 +33,7 @@ function sumCostsByCountry(data) {
 }
 
 const app = express();
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ dest: "/tmp/uploads/" });
 
 // Serve static files
 app.use(express.static("public"));
@@ -164,7 +164,7 @@ app.post(
       const csv = json2csvParser.parse(data3);
 
       // Define file path
-      const filePath = path.join(__dirname, "output.csv");
+      const filePath = path.join("/tmp", "output.csv");
 
       // Save CSV to a file
       fs.writeFileSync(filePath, csv);
