@@ -40,7 +40,7 @@ app.use(express.static("public"));
 
 // Endpoint to handle file upload
 app.post(
-  "/upload",
+  "/api/upload",
   upload.fields([{ name: "file1" }, { name: "file2" }]),
   async (req, res) => {
     try {
