@@ -70,7 +70,7 @@ app.post(
       const indexOfIncludes = (arr, str) => {
         for(i=0; i < arr.length; i++)
         {
-          if(arr[i].includes(str)) {
+          if(arr[i].endsWith(str)) {
             return i;
           }
         }
@@ -166,16 +166,16 @@ app.post(
         let revUSD =
           data2.find((x) => x.country === data1[i].country)?.revenue || 0;
         let revINR = revUSD * Number(rate);
-        let profit = revINR - data1[i].cost;
+        let profitINR = revINR - data1[i].cost;
         let profitPer = Number(data1[i].cost)
-          ? Number(Number(Number(Number(profit) / Number(data1[i].cost)) * 100).toFixed(2))
+          ? Number(Number(Number(Number(profitINR) / Number(data1[i].cost)) * 100).toFixed(2))
           : 0;
         let data = {
           country: data1[i].country,
           costINR: data1[i].cost,
           revUSD,
           revINR,
-          profit,
+          profitINR,
           profitPer,
         };
         if(data1[i].country && Number(data1[i].cost)) {
