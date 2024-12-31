@@ -55,7 +55,28 @@ app.post(
         return res.status(400).send("Both files are required.");
       }
 
-      const convertToJson1 = async (file) => {
+      const getNoOfColumns = async (file) => {
+        const filePath = file[0].path;
+        const ext = path.extname(file[0].originalname).toLowerCase();
+        if (ext === ".csv") {
+          let content = fs
+            .readFileSync(filePath, "utf8")
+          return content.split("\n")?.[0]?.split("\t")?.length;
+        } else {
+          throw new Error("Unsupported file type.");
+        }
+      }
+
+      const indexOfIncludes = (arr, str) => {
+        for(i=0; i < arr.length; i++)
+        {
+          if(arr[i].includes(str)) {
+            return i;
+          }
+        }
+      }
+
+      const convertToJson1 = async (file, dataChunck) => {
         const filePath = file[0].path;
         const ext = path.extname(file[0].originalname).toLowerCase();
         if (ext === ".csv") {
@@ -69,13 +90,13 @@ app.post(
             return x.replaceAll("\x00", "");
           });
           let rows = [];
-          const chunkSize = 13;
+          const chunkSize = dataChunck - 1;
           for (let i = 0; i < data.length; i += chunkSize) {
             const chunk = data.slice(i, i + chunkSize);
             rows.push(chunk);
           }
-          let countryIndex = rows[0].indexOf("Country/Territory (Matched)");
-          let costIndex = rows[0].indexOf("Cost");
+          let countryIndex = indexOfIncludes(rows[0], "Country/Territory (Matched)");
+          let costIndex = indexOfIncludes(rows[0], "Cost");
           let countryCost = [];
           for (let i = 0; i < rows.length; i++) {
             let obj = {
@@ -92,7 +113,7 @@ app.post(
         }
       };
 
-      const convertToJson2 = async (file) => {
+      const convertToJson2 = async (file, dataChunck) => {
         const filePath = file[0].path;
         const ext = path.extname(file[0].originalname).toLowerCase();
         if (ext === ".csv") {
@@ -107,13 +128,13 @@ app.post(
           });
           data = splitItemsWithNewline(data);
           let rows = [];
-          const chunkSize = 16;
+          const chunkSize = dataChunck;
           for (let i = 0; i < data.length; i += chunkSize) {
             const chunk = data.slice(i, i + chunkSize);
             rows.push(chunk);
           }
-          let countryIndex = rows[0].indexOf("Country");
-          let revenueIndex = rows[0].indexOf("Est. earnings (USD)");
+          let countryIndex = indexOfIncludes(rows[0], "Country");
+          let revenueIndex = indexOfIncludes(rows[0], "Est. earnings (USD)");
           let countryRevenue = [];
           for (let i = 0; i < rows.length; i++) {
             let obj = {
@@ -129,8 +150,10 @@ app.post(
         }
       };
 
-      const data1 = await convertToJson1(file1);
-      const data2 = await convertToJson2(file2);
+      const data1Chunck = await getNoOfColumns(file1);
+      const data2Chunck = await getNoOfColumns(file2);
+      const data1 = await convertToJson1(file1, data1Chunck);
+      const data2 = await convertToJson2(file2, data2Chunck);
 
       if (!data1[0]?.country || !data1[0]?.cost) {
         return res.status(400).send("country or cost field not found");
