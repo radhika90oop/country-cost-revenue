@@ -6,9 +6,9 @@ const fs = require("fs");
 
 function splitItemsWithNewline(array) {
   const result = [];
-  array.forEach(item => {
-    if (item.includes('\n')) {
-      result.push(...item.split('\n'));
+  array.forEach((item) => {
+    if (item.includes("\n")) {
+      result.push(...item.split("\n"));
     } else {
       result.push(item);
     }
@@ -59,22 +59,20 @@ app.post(
         const filePath = file[0].path;
         const ext = path.extname(file[0].originalname).toLowerCase();
         if (ext === ".csv") {
-          let content = fs
-            .readFileSync(filePath, "utf8")
+          let content = fs.readFileSync(filePath, "utf8");
           return content.split("\n")?.[0]?.split("\t")?.length;
         } else {
           throw new Error("Unsupported file type.");
         }
-      }
+      };
 
       const indexOfIncludes = (arr, str) => {
-        for(i=0; i < arr.length; i++)
-        {
-          if(arr[i].endsWith(str)) {
+        for (i = 0; i < arr.length; i++) {
+          if (arr[i].endsWith(str)) {
             return i;
           }
         }
-      }
+      };
 
       const convertToJson1 = async (file, dataChunck) => {
         const filePath = file[0].path;
@@ -95,7 +93,10 @@ app.post(
             const chunk = data.slice(i, i + chunkSize);
             rows.push(chunk);
           }
-          let countryIndex = indexOfIncludes(rows[0], "Country/Territory (Matched)");
+          let countryIndex = indexOfIncludes(
+            rows[0],
+            "Country/Territory (Matched)"
+          );
           let costIndex = indexOfIncludes(rows[0], "Cost");
           let countryCost = [];
           for (let i = 0; i < rows.length; i++) {
@@ -135,11 +136,13 @@ app.post(
           }
           let countryIndex = indexOfIncludes(rows[0], "Country");
           let revenueIndex = indexOfIncludes(rows[0], "Est. earnings (USD)");
+          let eCPMIndex = indexOfIncludes(rows[0], "Observed eCPM (USD)");
           let countryRevenue = [];
           for (let i = 0; i < rows.length; i++) {
             let obj = {
               country: rows[i]?.[countryIndex],
               revenue: rows[i]?.[revenueIndex],
+              eCPM: rows[i]?.[eCPMIndex],
             };
             countryRevenue.push(obj);
           }
@@ -168,8 +171,14 @@ app.post(
         let revINR = revUSD * Number(rate);
         let profitINR = revINR - data1[i].cost;
         let profitPer = Number(data1[i].cost)
-          ? Number(Number(Number(Number(profitINR) / Number(data1[i].cost)) * 100).toFixed(2))
+          ? Number(
+              Number(
+                Number(Number(profitINR) / Number(data1[i].cost)) * 100
+              ).toFixed(2)
+            )
           : 0;
+        let eCPMUSD =
+          data2.find((x) => x.country === data1[i].country)?.eCPM || 0;
         let data = {
           country: data1[i].country,
           costINR: data1[i].cost,
@@ -177,8 +186,9 @@ app.post(
           revINR,
           profitINR,
           profitPer,
+          eCPMUSD,
         };
-        if(data1[i].country && Number(data1[i].cost)) {
+        if (data1[i].country && Number(data1[i].cost)) {
           data3.push(data);
         }
       }
