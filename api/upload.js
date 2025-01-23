@@ -1,8 +1,10 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
-const { Parser } = require("json2csv");
+// const { Parser } = require("json2csv");
 const fs = require("fs");
+// const XLSX = require("xlsx");
+const ExcelJS = require("exceljs");
 
 function splitItemsWithNewline(array) {
   const result = [];
@@ -166,8 +168,9 @@ app.post(
       }
       let data3 = [];
       for (let i = 0; i < data1.length; i++) {
-        let revUSD =
-          data2.find((x) => x.country === data1[i].country)?.revenue || 0;
+        let revUSD = Number(
+          data2.find((x) => x.country === data1[i].country)?.revenue || 0
+        );
         let revINR = revUSD * Number(rate);
         let profitINR = revINR - data1[i].cost;
         let profitPer = Number(data1[i].cost)
@@ -177,8 +180,9 @@ app.post(
               ).toFixed(2)
             )
           : 0;
-        let eCPMUSD =
-          data2.find((x) => x.country === data1[i].country)?.eCPM || 0;
+        let eCPMUSD = Number(
+          data2.find((x) => x.country === data1[i].country)?.eCPM || 0
+        );
         let data = {
           country: data1[i].country,
           costINR: data1[i].cost,
@@ -192,20 +196,78 @@ app.post(
           data3.push(data);
         }
       }
-      const fields = Object.keys(data3[0]); // Extract fields from JSON
-      const json2csvParser = new Parser({ fields });
-      const csv = json2csvParser.parse(data3);
+
+      // Create a new workbook and add a worksheet
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.columns = [
+        { header: "country", key: "country", width: 30 },
+        { header: "costINR", key: "costINR", width: 10 },
+        { header: "revUSD", key: "revUSD", width: 10 },
+        { header: "revINR", key: "revINR", width: 10 },
+        { header: "profitINR", key: "profitINR", width: 10 },
+        { header: "profitPer", key: "profitPer", width: 10 },
+        { header: "eCPMUSD", key: "eCPMUSD", width: 10 },
+      ];
+
+      // Add data to the worksheet
+      data3.forEach((row) => worksheet.addRow(row));
+
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // Skip header row
+
+        const profitINRCell = row.getCell("profitINR");
+        const profitPerCell = row.getCell("profitPer");
+
+        if (profitINRCell.value > 0) {
+          let fontGreen = {
+            color: { argb: "56AE57" }, // Green font
+            bold: true, // Optionally make the text bold
+          };
+          profitINRCell.font = fontGreen;
+          profitPerCell.font = fontGreen;
+        }
+        if (profitINRCell.value < 0) {
+          let fontRed = {
+            color: { argb: "C23B22" }, // Green font
+            bold: true, // Optionally make the text bold
+          };
+          profitINRCell.font = fontRed;
+          profitPerCell.font = fontRed;
+        }
+      });
 
       // Define file path
-      const filePath = path.join("/tmp", "output.csv");
+      const filePath = path.join("/tmp", "output.xlsx");
 
-      // Save CSV to a file
-      fs.writeFileSync(filePath, csv);
+      // Write the Excel file
+      workbook.xlsx.writeFile(filePath).then(() => {
+        // Send the file as a response
+        res.setHeader(
+          "Content-Type",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        res.setHeader(
+          "Content-Disposition",
+          "attachment; filename=output.xlsx"
+        );
+        res.send(fs.readFileSync(filePath));
+      });
 
-      // Send CSV file as a response
-      res.setHeader("Content-Type", "text/csv");
-      res.setHeader("Content-Disposition", "attachment; filename=output.csv");
-      res.send(csv);
+      // const fields = Object.keys(data3[0]); // Extract fields from JSON
+      // const json2csvParser = new Parser({ fields });
+      // const csv = json2csvParser.parse(data3);
+
+      // // Define file path
+      // const filePath = path.join("/tmp", "output.csv");
+
+      // // Save CSV to a file
+      // fs.writeFileSync(filePath, csv);
+
+      // // Send CSV file as a response
+      // res.setHeader("Content-Type", "text/csv");
+      // res.setHeader("Content-Disposition", "attachment; filename=output.csv");
+      // res.send(csv);
     } catch (err) {
       console.error(err);
       res.status(500).send("Error processing files.");
