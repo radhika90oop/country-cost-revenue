@@ -239,6 +239,25 @@ app.post(
 
       // Define file path
       const filePath = path.join("/tmp", "output.xlsx");
+      const folderPath = path.join("/tmp","uploads"); // Change this to your folder path
+
+      fs.readdir(folderPath, (err, files) => {
+        if (err) {
+          console.error("Error reading directory:", err);
+          return;
+        }
+
+        files.forEach((file) => {
+          const filePath = path.join(folderPath, file);
+          fs.unlink(filePath, (err) => {
+            if (err) {
+              console.error("Error deleting file:", err);
+            } else {
+              console.log(`Deleted: ${filePath}`);
+            }
+          });
+        });
+      });
 
       // Write the Excel file
       workbook.xlsx.writeFile(filePath).then(() => {
