@@ -137,7 +137,7 @@ app.post(
             rows.push(chunk);
           }
           let countryIndex = indexOfIncludes(rows[0], "Country");
-          let revenueIndex = indexOfIncludes(rows[0], "Est. earnings (USD)");
+          let revenueIndex = indexOfIncludes(rows[0], "Estimated earnings (USD)");
           let eCPMIndex = indexOfIncludes(rows[0], "Observed eCPM (USD)");
           let countryRevenue = [];
           for (let i = 0; i < rows.length; i++) {
